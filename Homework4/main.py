@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from joblib import Parallel, delayed
 import multiprocessing
-import math
+import DataManager as dm
 
 def Mating(index,s):
     if(index[0] == 0 and index[1] == 0):
@@ -11,21 +11,21 @@ def Mating(index,s):
         return 'aa'
     elif(index[0] != index[1] and (index[0] == 1 or index[1] == 1) and index[0] != 2 and index[1] != 2):
         choseAllele = np.random.rand()
-        if(choseAllele<1/2):
+        if(choseAllele<=1/2):
             return 'AA'
         else:
             return 'Aa'
     elif(index[0] != index[1] and (index[0] == 1 or index[1] == 1) and index[0] != 0 and index[1] != 0):
         choseAllele = np.random.rand()
-        if (choseAllele < 1 / 2):
+        if (choseAllele <= 1 / 2):
             return 'aa'
         else:
             return 'Aa'
     else:
         choseAllele = np.random.rand()
-        if(choseAllele<1/4):
+        if(choseAllele<=1/4):
             return 'AA'
-        elif(choseAllele<3/4):
+        elif(choseAllele<=3/4):
             return 'Aa'
         else:
             return 'aa'
@@ -73,12 +73,12 @@ def Sim(s,N,numberOfRepeats,i):
 # Theoretical plot
 def pFixAnalytical(S,N):
 
-    return (1-np.exp(-2*S))/(1-np.exp(-2*S*N))
+    return (1-np.exp(-S))/(1-np.exp(-2*S*N))
 
 def main():
     s = np.array([10**-4,5*10**-4,10**-3,5*10**-3,10**-2,5*10**-2,0.1])
     N = 1000
-    numberOfRepeats = 10000
+    numberOfRepeats = 100
     allels = {'AA','Aa','aa'}
     genotypeFitness = {'AA': lambda s: 1,'Aa': lambda s: 1-s/2,'aa': lambda s: 1-s}
     listSPfix = []
@@ -90,7 +90,8 @@ def main():
         print(listSPfix)
     fig, ax = plt.subplots()
     ax.plot(s,listSPfix,label='Simulation')
-    ax.plot(s,pFixAnalytical(s,N),label='Analytical')
+    ax.plot(s,pFixAnalytical(s,N),label='Analytical Kimura')
+    ax.plot(s,s,label='Analytical Haldane')
     ax.set_xscale('log')
     ax.set_xlabel('s')
     ax.set_ylabel('Probability of fixation of advantageous')
