@@ -2,7 +2,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 from joblib import Parallel, delayed
 import multiprocessing
-import DataManager as dm
+
+def SaveData(fileName = 'new file', data = [0,0,0]):
+    fw = open(fileName, 'w')
+    fw.write(str(data))
+    fw.close()
+    return True
+
+def ReadData(fileName = 'new file'):
+    fr = open(fileName,'r')
+    data = fr.read()
+    flag = True
+    if(data == []):
+        flag = False
+    fr.close()
+    return data, flag
 
 def Mating(index,s):
     if(index[0] == 0 and index[1] == 0):
@@ -38,18 +52,20 @@ def Condition(genotypeFrequencey):
         return False, 'Fix'
     else:
         return True,[]
-def Sim(s,N,numberOfRepeats,i):
-    genotypeFrequencey = {'AA': 0, 'Aa': 1 / N, 'aa': (N - 1) / N}
+def Sim(s,N,numberOfRepeats,j):
+    i=0
+    #j=0
+    genotypeFrequencey = {'AA': 0, 'Aa': 1 / N[j], 'aa': (N[j] - 1) / N[j]}
     listFixation = []
     X = True
     while X:
         tempList = []
-        omega = 1*genotypeFrequencey['AA']+(1-s[i]/2)*genotypeFrequencey['Aa']+(1-s[i])*genotypeFrequencey['aa']
+        omega = 1*genotypeFrequencey['AA']+(1-s/2)*genotypeFrequencey['Aa']+(1-s)*genotypeFrequencey['aa']
         sizeBoxAA = 1 * genotypeFrequencey['AA'] / omega
-        sizeBoxAa = (1-s[i]/2) * genotypeFrequencey['Aa'] / omega
-        sizeBoxaa = (1-s[i]) * genotypeFrequencey['aa'] / omega
+        sizeBoxAa = (1-s/2) * genotypeFrequencey['Aa'] / omega
+        sizeBoxaa = (1-s) * genotypeFrequencey['aa'] / omega
         sizeBoxList = np.array([sizeBoxAA,sizeBoxAa,sizeBoxaa])
-        for n in range(N): # generate new generation
+        for n in range(N[j]): # generate new generation
             choseParents = [np.random.rand(),np.random.rand()]
             box = np.array([sizeBoxList[0],sizeBoxList[0]])
             index = np.array([0,0])
@@ -57,14 +73,14 @@ def Sim(s,N,numberOfRepeats,i):
                 while(box[k] < choseParents[k]):
                     index[k] += 1
                     box[k] += sizeBoxList[index[k]]
-            tempList.append(Mating(index,s[i])) #New individual in the new generation
+            tempList.append(Mating(index,s)) #New individual in the new generation
             # Generate new frequencis
             numAA = tempList.count('AA')
             numAa = tempList.count('Aa')
             numaa = tempList.count('aa')
-            genotypeFrequencey['AA'] = numAA / N
-            genotypeFrequencey['Aa'] = numAa / N
-            genotypeFrequencey['aa'] = numaa / N
+            genotypeFrequencey['AA'] = numAA / N[j]
+            genotypeFrequencey['Aa'] = numAa / N[j]
+            genotypeFrequencey['aa'] = numaa / N[j]
         X, temp = Condition(genotypeFrequencey)
         if(temp != []):
             listFixation.append(temp)               # count number of fixations
@@ -76,13 +92,15 @@ def pFixAnalytical(S,N):
     return (1-np.exp(-S))/(1-np.exp(-2*S*N))
 
 def main():
-    s = np.array([10**-4,5*10**-4,10**-3,5*10**-3,10**-2,5*10**-2,0.1])
-    N = 1000
-    numberOfRepeats = 100
+    #s = np.array([10**-4,5*10**-4,10**-3,5*10**-3,10**-2,5*10**-2,0.1])
+    s = 10**-3
+    N = np.array([100,1000,5000,10000,100000])
+    numberOfRepeats = 10000
     allels = {'AA','Aa','aa'}
     genotypeFitness = {'AA': lambda s: 1,'Aa': lambda s: 1-s/2,'aa': lambda s: 1-s}
     listSPfix = []
-    for i in range(len(s)):
+    RangeRun = len(N)
+    for i in range(RangeRun):
         num_cores = multiprocessing.cpu_count()
         print(num_cores)
         listPfix = Parallel(n_jobs=num_cores)(delayed(Sim)(s,N,numberOfRepeats,i) for repeat in range(numberOfRepeats))
@@ -97,6 +115,11 @@ def main():
     ax.set_ylabel('Probability of fixation of advantageous')
     ax.set_title('Likelihood of fixation')
     ax.legend()
+
+    fileName = 'Data from Run with multiple N'
+    data = str(s)+'\n'+ str(pFixAnalytical(s,N))+'\n'+str(listSPfix)
+    SaveData(fileName= fileName, data= data)
+
     plt.show()
 
 
